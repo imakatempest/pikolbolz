@@ -1,63 +1,263 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pickleball Rotation</title>
-<style>
-:root{--bg:#0b1220;--p:#111b2e;--p2:#17243b;--t:#f5f7fb;--m:#9fb0c8;--a:#8bd450;--l:#263752;--r:#ffd166}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial;background:#0b1220;color:var(--t)}
-.wrap{max-width:920px;margin:auto;padding:18px 12px 45px}.card{background:var(--p);border:1px solid var(--l);border-radius:18px;padding:18px;margin:14px 0}
-h1{margin:0}.sub,.note{color:var(--m)}.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
-label{display:block;color:var(--m);font-size:13px;margin-bottom:5px}select,input{background:#0b1425;color:white;border:1px solid #334866;border-radius:10px;padding:10px}
-button{border:0;border-radius:11px;padding:11px 15px;font-weight:800;cursor:pointer}.pri{background:var(--a);color:#10200a}.sec{background:#263752;color:white}
-.names{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:9px;margin-top:14px}.nb{display:flex;gap:7px;align-items:center}.badge{width:32px;height:32px;border-radius:50%;background:#263752;display:grid;place-items:center;font-weight:900}.nb input{width:100%}
-.hidden{display:none}.court{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin:18px 0}.team{background:var(--p2);border:1px solid #314768;border-radius:15px;padding:20px;text-align:center;font-size:23px;font-weight:900}.vs{color:var(--a);font-weight:900}.rest{background:#241f12;border:1px solid #554821;color:var(--r);padding:12px;border-radius:11px}
-.controls{display:flex;gap:9px;justify-content:center;margin-top:15px}.head{display:flex;justify-content:space-between}.queue{display:grid;gap:8px}.q{display:grid;grid-template-columns:70px 1fr 1fr 1.2fr;gap:8px;padding:10px;border:1px solid var(--l);border-radius:11px;background:#0d1728}.q.cur{outline:2px solid var(--a)}.qr{color:var(--m);font-size:13px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.stat{background:#0d1728;border:1px solid var(--l);border-radius:10px;padding:10px}.stat span{display:block;color:var(--m);font-size:13px}
-@media(max-width:620px){.court{grid-template-columns:1fr}.vs{text-align:center}.q{grid-template-columns:60px 1fr}.q .qr{grid-column:1/-1}}
-</style></head><body><div class="wrap">
-<h1>🏓 Pickleball Rotation</h1>
-<section class="card"><div class="row"><div><label>Players</label><select id="count"><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div><button class="pri" id="gen">Generate Rotation</button></div><div id="names" class="names"></div><p id="err" class="note"></p></section>
-<section id="gameCard" class="card hidden"><div class="head"><h2 id="gt"></h2><strong id="ctr"></strong></div><div class="court"><div id="t1" class="team"></div><div class="vs">VS</div><div id="t2" class="team"></div></div><div class="rest"><b>Resting:</b> <span id="rr"></span></div><p id="nxt" class="note"></p><div class="controls"><button id="prev" class="sec">← Previous</button><button id="next" class="pri">Next Game →</button><button id="reset" class="sec">Reset</button></div></section>
-<section id="queueCard" class="card hidden"><h2>Full Queue — Games 1–15</h2><div id="queue" class="queue"></div></section>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pikolbolz</title><style>
+:root{--b:#0b1220;--p:#111b2e;--p2:#17243b;--t:#f5f7fb;--m:#9fb0c8;--a:#8bd450;--l:#263752;--y:#ffd166}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial;background:var(--b);color:var(--t)}.w{max-width:1180px;margin:auto;padding:18px 12px 50px}
+.card{background:var(--p);border:1px solid var(--l);border-radius:18px;padding:18px;margin:14px 0}h1{margin:0 0 16px}.row{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+label{display:block;color:var(--m);font-size:13px;font-weight:700;margin-bottom:5px}select,input{background:#0b1425;color:white;border:1px solid #334866;border-radius:10px;padding:10px}
+button{border:0;border-radius:11px;padding:11px 15px;font-weight:800;cursor:pointer}.pri{background:var(--a);color:#10200a}.sec{background:#263752;color:white}button:disabled{opacity:.45;cursor:not-allowed}.muted{color:var(--m)}.warn{color:var(--y)}
+.names{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:14px}.nb{display:flex;gap:7px;align-items:center}.badge{width:34px;height:34px;border-radius:50%;background:#263752;display:grid;place-items:center;font-weight:900;flex:none}.nb input{width:100%}.hidden{display:none!important}
+.courts{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px}.court{background:#0d1728;border:1px solid var(--l);border-radius:14px;padding:14px}.chead{display:flex;justify-content:space-between;align-items:center;gap:8px}.chead h2{margin:0;font-size:20px}.match{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:13px}.team{background:var(--p2);padding:12px;border-radius:10px;text-align:center;font-weight:900}.vs{color:var(--a);font-weight:900}
+.scores{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;margin-top:10px}.stepper{display:flex;align-items:center;gap:7px}.stepper button{width:34px;height:34px;padding:0;background:#263752;color:white;font-size:20px}.scoreval{min-width:26px;text-align:center;font-weight:900}.foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid var(--l)}.done{display:flex;align-items:center;gap:6px;color:var(--m)}.done input{width:18px;height:18px;accent-color:var(--a)}
+.nextbtn{width:100%;margin-top:11px}.nextbtn:disabled{opacity:.4;cursor:not-allowed}.waiting{margin-top:8px;color:var(--y);font-size:13px}
+.upcoming{display:grid;gap:8px}.up{background:#0d1728;border:1px solid var(--l);border-radius:11px;padding:10px}
+.uphead{display:flex;justify-content:space-between;gap:8px;align-items:center}.upmatch{margin-top:5px;font-weight:700}
+.upblocked{color:var(--y);font-size:12px}.upready{color:var(--a);font-size:12px}
+.history{display:grid;gap:10px}.hist{background:#0d1728;border:1px solid var(--l);border-radius:12px;padding:11px}.hhead{display:flex;justify-content:space-between;gap:8px}.resultboard{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin-top:8px}.resultteam{background:#111d31;border:1px solid #263752;border-radius:10px;padding:10px}.resultplayers{display:grid;grid-template-columns:1fr 1fr;gap:8px}.resultplayer{text-align:center;font-weight:700}.resultscore{margin-top:5px;background:#17243b;border:1px solid #334866;border-radius:8px;padding:7px;font-size:18px;font-weight:900}.teamtotal{text-align:center;margin-top:9px;padding-top:8px;border-top:1px solid #263752;color:var(--m)}.teamtotal b{color:white;font-size:20px;margin-left:5px}.resultvs{display:grid;place-items:center;color:var(--a);font-weight:900}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.stat{background:#0d1728;border:1px solid var(--l);border-radius:10px;padding:10px}.stat span{display:block;color:var(--m);font-size:13px}
+@media(max-width:650px){.courts{grid-template-columns:1fr}.match{grid-template-columns:1fr}.vs{text-align:center}.resultboard{grid-template-columns:1fr}.resultvs{padding:0}}
+</style></head><body><div class="w"><h1>🏓 Pikolbolz</h1>
+<section class="card"><div class="row"><div><label>Courts</label><select id="courts"><option>1</option><option>2</option><option>3</option><option>4</option></select></div><div><label>Hours booked</label><select id="hours"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div><div><label>Players</label><select id="count"></select></div><button id="gen" class="pri">Generate Rotation</button><button id="savePdf" class="sec" disabled>Save Summary (PDF)</button><button id="reset" class="sec">Reset</button></div><p id="info" class="muted"></p><div id="names" class="names"></div><p id="err" class="warn"></p></section>
+<section id="session" class="card hidden"><div class="chead"><h2>Live Courts</h2><span id="progress" class="muted"></span></div><p class="muted">Courts advance independently. Complete a game, then use that court's Next Game button.</p><div id="liveCourts" class="courts"></div></section>
+<section id="upcomingCard" class="card hidden"><div class="chead"><h2>Upcoming Queue</h2><span id="upcomingCount" class="muted"></span></div><p class="muted">Planned order. When a court opens, it takes the earliest game whose four players are currently free.</p><div id="upcoming" class="upcoming"></div></section>
+<section id="historyCard" class="card hidden"><h2>Completed Games</h2><div id="history" class="history"></div></section>
 <section id="statsCard" class="card hidden"><h2>Session Summary</h2><div id="stats" class="stats"></div></section>
-
 </div><script>
-const L="ABCDEFGHIJ".split(""), count=document.getElementById("count"), names=document.getElementById("names");
-let players=[],schedule=[],current=0;
-function inputs(){let old=[...names.querySelectorAll("input")].map(x=>x.value);names.innerHTML="";for(let i=0;i<+count.value;i++){let d=document.createElement("div");d.className="nb";d.innerHTML=`<div class="badge">${L[i]}</div><input value="${old[i]||L[i]}">`;names.appendChild(d)}}count.onchange=inputs;inputs();
-function combos(a,k){let o=[];function f(s,c){if(c.length===k){o.push(c.slice());return}for(let i=s;i<a.length;i++){c.push(a[i]);f(i+1,c);c.pop()}}f(0,[]);return o}
+const L="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),ce=courts,he=hours,pe=count,ne=names;
+let players=[],courtStates=[],history=[],upcomingQueue=[],state={},targetPerCourt=0,gameSeq=0,plannedSeq=0;
 const k2=(a,b)=>a<b?a+"|"+b:b+"|"+a;
-function pairings(x){let[a,b,c,d]=x;return [[[a,b],[c,d]],[[a,c],[b,d]],[[a,d],[b,c]]]}
-function build(n){
- const ids=[...Array(n).keys()], rc=n-4; let BEST=null;
- for(let attempt=0;attempt<350;attempt++){
-  let gp=Array(n).fill(0),rs=Array(n).fill(0),st=Array(n).fill(0),rt=new Map(),pm=new Map(),om=new Map(),games=[],bad=false;
-  for(let g=0;g<15;g++){
-   let opts=combos(ids,rc).filter(r=>{let R=new Set(r);return ids.every(p=>st[p]<2||R.has(p))});
-   if(!opts.length){bad=true;break}
-   let scored=opts.map(r=>{let R=new Set(r),ag=ids.map(p=>gp[p]+(R.has(p)?0:1)),ar=ids.map(p=>rs[p]+(R.has(p)?1:0)),rep=0,maxp=0,newp=0;
-    for(let i=0;i<r.length;i++)for(let j=i+1;j<r.length;j++){let v=rt.get(k2(r[i],r[j]))||0;rep+=v;maxp=Math.max(maxp,v);if(!v)newp++}
-    let imbalance=(Math.max(...ag)-Math.min(...ag)+Math.max(...ar)-Math.min(...ar))*1200;
-    return {r,score:imbalance+rep*(n===6?10000:350)+maxp*300-newp*30+r.reduce((s,p)=>s+rs[p],0)*8+Math.random()*2}
-   }).sort((a,b)=>a.score-b.score);
-   let pick=scored[Math.floor(Math.random()*Math.min(n===6?2:5,scored.length))].r,R=new Set(pick),play=ids.filter(p=>!R.has(p));
-   let bp=null,bs=1e9;for(let teams of pairings(play)){let[[a,b],[c,d]]=teams,s=(pm.get(k2(a,b))||0)*18+(pm.get(k2(c,d))||0)*18;for(let x of[a,b])for(let y of[c,d])s+=(om.get(k2(x,y))||0)*4;s+=Math.random();if(s<bs){bs=s;bp=teams}}
-   let[[a,b],[c,d]]=bp;pm.set(k2(a,b),(pm.get(k2(a,b))||0)+1);pm.set(k2(c,d),(pm.get(k2(c,d))||0)+1);for(let x of[a,b])for(let y of[c,d])om.set(k2(x,y),(om.get(k2(x,y))||0)+1);
-   for(let i=0;i<pick.length;i++)for(let j=i+1;j<pick.length;j++){let k=k2(pick[i],pick[j]);rt.set(k,(rt.get(k)||0)+1)}
-   ids.forEach(p=>{if(R.has(p)){rs[p]++;st[p]=0}else{gp[p]++;st[p]++}});games.push({teams:bp,rest:pick.slice()});
-  }
-  if(bad||games.length!==15)continue;
-  let imb=(Math.max(...gp)-Math.min(...gp))*3000,repeat=0,maxrt=0;rt.forEach(v=>{repeat+=Math.max(0,v-1);maxrt=Math.max(maxrt,v)});
-  let perfect=0;if(n===6){let u=0;for(let a=0;a<6;a++)for(let b=a+1;b<6;b++)if((rt.get(k2(a,b))||0)===1)u++;if(u===15&&maxrt===1)perfect=-100000}
-  let score=imb+repeat*1000+maxrt*200+perfect;if(!BEST||score<BEST.score)BEST={games,score};
+let partner=new Map(),opponent=new Map(),playCount=[],lastPlayed=[],consecutive=[],waitAge=[];
+
+function setup(){let c=+ce.value,min=Math.max(5,c*4),old=+pe.value||min;pe.innerHTML="";for(let n=min;n<=24;n++)pe.add(new Option(n,n));pe.value=Math.max(min,Math.min(24,old));inputs();summary()}
+function summary(){let g=Math.floor(+he.value*60/14),left=+he.value*60-g*14;info.textContent=`${ce.value} court${ce.value>1?"s":""} • minimum ${Math.max(5,+ce.value*4)} players • target ${g} games per court at 14 min/game • ${left} min booking buffer • up to ${g*(+ce.value)} matches.`}
+function inputs(){let n=+pe.value,old=[...ne.querySelectorAll("input")].map(x=>x.value);ne.innerHTML="";for(let i=0;i<n;i++){let d=document.createElement("div");d.className="nb";d.innerHTML=`<div class="badge">${L[i]}</div><input value="${old[i]||L[i]}">`;ne.appendChild(d)}}
+ce.onchange=setup;he.onchange=summary;pe.onchange=()=>{inputs();summary()};setup();
+
+const nm=i=>players[i], tt=t=>nm(t[0])+" + "+nm(t[1]);
+function busyPlayers(exceptCourt=-1){let s=new Set();courtStates.forEach((c,i)=>{if(i!==exceptCourt&&c.game&&!c.completed)c.game.teams.flat().forEach(p=>s.add(p))});return s}
+
+function pickFour(courtIndex){
+ let busy=busyPlayers(courtIndex),available=players.map((_,i)=>i).filter(i=>!busy.has(i));
+ if(available.length<4)return null;
+ // Prefer fewer total games, longer waiting, and avoid immediately replaying if alternatives exist.
+ available.sort((a,b)=>{
+   let sa=playCount[a]*1000-waitAge[a]*80+(lastPlayed[a]===gameSeq?300:0)+consecutive[a]*45+Math.random()*2;
+   let sb=playCount[b]*1000-waitAge[b]*80+(lastPlayed[b]===gameSeq?300:0)+consecutive[b]*45+Math.random()*2;
+   return sa-sb;
+ });
+ let shortlist=available.slice(0,Math.min(8,available.length)),best=null,bs=Infinity;
+ // Test all 4-player subsets from a small fairness shortlist.
+ for(let a=0;a<shortlist.length;a++)for(let b=a+1;b<shortlist.length;b++)for(let c=b+1;c<shortlist.length;c++)for(let d=c+1;d<shortlist.length;d++){
+   let q=[shortlist[a],shortlist[b],shortlist[c],shortlist[d]];
+   let sc=q.reduce((s,p)=>s+playCount[p]*100-waitAge[p]*12+consecutive[p]*8,0)+Math.random();
+   if(sc<bs){bs=sc;best=q}
  }
- return BEST?.games;
+ return best||available.slice(0,4);
 }
-const nm=i=>players[i],tt=t=>nm(t[0])+" + "+nm(t[1]);
+function bestMatch(ps){
+ let [a,b,c,d]=ps,opts=[[[a,b],[c,d]],[[a,c],[b,d]],[[a,d],[b,c]]],best,bs=Infinity;
+ for(let x of opts){let[t1,t2]=x,s=(partner.get(k2(...t1))||0)*30+(partner.get(k2(...t2))||0)*30;for(let p of t1)for(let q of t2)s+=(opponent.get(k2(p,q))||0)*7;s+=Math.random();if(s<bs){bs=s;best=x}}
+ return best;
+}
+function createGame(ci){
+ if(courtStates[ci].played>=targetPerCourt)return null;
+ let four=pickFour(ci);if(!four)return null;let teams=bestMatch(four),flat=teams.flat(),selected=new Set(flat);
+ gameSeq++;
+ players.forEach((_,p)=>{if(selected.has(p)){playCount[p]++;consecutive[p]++;waitAge[p]=0;lastPlayed[p]=gameSeq}else if(!busyPlayers(ci).has(p)){waitAge[p]++;consecutive[p]=0}});
+ let[t1,t2]=teams;partner.set(k2(...t1),(partner.get(k2(...t1))||0)+1);partner.set(k2(...t2),(partner.get(k2(...t2))||0)+1);for(let p of t1)for(let q of t2)opponent.set(k2(p,q),(opponent.get(k2(p,q))||0)+1);
+ return {id:gameSeq,teams,scores:Object.fromEntries(flat.map(p=>[p,0]))};
+}
+
+function planNextGame(simPlay,simWait,simPartner,simOpponent){
+ let ids=players.map((_,i)=>i).sort((a,b)=>{
+   let sa=simPlay[a]*1000-simWait[a]*80+Math.random()*2;
+   let sb=simPlay[b]*1000-simWait[b]*80+Math.random()*2;
+   return sa-sb;
+ });
+ let pool=ids.slice(0,Math.min(9,ids.length)),best=null,bs=Infinity;
+ for(let a=0;a<pool.length;a++)for(let b=a+1;b<pool.length;b++)for(let c=b+1;c<pool.length;c++)for(let d=c+1;d<pool.length;d++){
+   let q=[pool[a],pool[b],pool[c],pool[d]];
+   let sc=q.reduce((z,p)=>z+simPlay[p]*100-simWait[p]*12,0)+Math.random();
+   if(sc<bs){bs=sc;best=q}
+ }
+ let four=best||ids.slice(0,4), [a,b,c,d]=four;
+ let opts=[[[a,b],[c,d]],[[a,c],[b,d]],[[a,d],[b,c]]],teams=null,tbs=Infinity;
+ for(const x of opts){
+   let [t1,t2]=x,sc=(simPartner.get(k2(...t1))||0)*30+(simPartner.get(k2(...t2))||0)*30;
+   for(const p of t1)for(const q of t2)sc+=(simOpponent.get(k2(p,q))||0)*7;
+   sc+=Math.random();
+   if(sc<tbs){tbs=sc;teams=x}
+ }
+ let chosen=new Set(four);
+ players.forEach((_,p)=>{if(chosen.has(p)){simPlay[p]++;simWait[p]=0}else simWait[p]++});
+ let [t1,t2]=teams;
+ simPartner.set(k2(...t1),(simPartner.get(k2(...t1))||0)+1);
+ simPartner.set(k2(...t2),(simPartner.get(k2(...t2))||0)+1);
+ for(const p of t1)for(const q of t2)simOpponent.set(k2(p,q),(simOpponent.get(k2(p,q))||0)+1);
+ plannedSeq++;
+ return {planId:plannedSeq,teams};
+}
+function buildMasterQueue(total){
+ let sp=Array(players.length).fill(0),sw=Array(players.length).fill(0),pm=new Map(),om=new Map(),q=[];
+ for(let i=0;i<total;i++)q.push(planNextGame(sp,sw,pm,om));
+ return q;
+}
+function queueGamePlayable(item,exceptCourt=-1){
+ let busy=busyPlayers(exceptCourt);
+ return item.teams.flat().every(p=>!busy.has(p));
+}
+function takeNextPlanned(ci){
+ if(courtStates[ci].played>=targetPerCourt)return null;
+ let idx=upcomingQueue.findIndex(item=>queueGamePlayable(item,ci));
+ if(idx<0)return null;
+ let plan=upcomingQueue.splice(idx,1)[0],flat=plan.teams.flat(),selected=new Set(flat);
+ gameSeq++;
+ players.forEach((_,p)=>{if(selected.has(p)){playCount[p]++;consecutive[p]++;waitAge[p]=0;lastPlayed[p]=gameSeq}else if(!busyPlayers(ci).has(p)){waitAge[p]++;consecutive[p]=0}});
+ let [t1,t2]=plan.teams;
+ partner.set(k2(...t1),(partner.get(k2(...t1))||0)+1);
+ partner.set(k2(...t2),(partner.get(k2(...t2))||0)+1);
+ for(const p of t1)for(const q of t2)opponent.set(k2(p,q),(opponent.get(k2(p,q))||0)+1);
+ return {id:gameSeq,planId:plan.planId,teams:plan.teams,scores:Object.fromEntries(flat.map(p=>[p,0]))};
+}
+function renderUpcoming(){
+ upcomingCard.classList.toggle("hidden",upcomingQueue.length===0);
+ upcomingCount.textContent=`${upcomingQueue.length} waiting`;
+ upcoming.innerHTML=upcomingQueue.map((item,i)=>{
+   let ready=queueGamePlayable(item);
+   return `<div class="up"><div class="uphead"><b>Upcoming #${item.planId}</b><span class="${ready?"upready":"upblocked"}">${ready?"Ready":"Waiting for player(s)"}</span></div><div class="upmatch">${tt(item.teams[0])} <span class="muted">vs</span> ${tt(item.teams[1])}</div></div>`;
+ }).join("");
+}
+function initSession(){
+ players=[...ne.querySelectorAll("input")].map((x,i)=>x.value.trim()||L[i]);
+ targetPerCourt=Math.floor(+he.value*60/14);history=[];upcomingQueue=[];state={};gameSeq=0;plannedSeq=0;
+ partner=new Map();opponent=new Map();playCount=Array(players.length).fill(0);lastPlayed=Array(players.length).fill(-99);consecutive=Array(players.length).fill(0);waitAge=Array(players.length).fill(0);
+ courtStates=Array.from({length:+ce.value},()=>({game:null,completed:false,played:0}));
+ upcomingQueue=buildMasterQueue(targetPerCourt*courtStates.length);
+ // Launch initial courts from the planned queue without double-booking.
+ for(let i=0;i<courtStates.length;i++)courtStates[i].game=takeNextPlanned(i);
+}
+function teamTotal(g,t){return g.teams[t].reduce((s,p)=>s+(g.scores[p]||0),0)}
+function scoreControls(g){
+ return g.teams.flat().map(p=>`<span>${nm(p)}</span><div class="stepper"><button data-minus="${g.id}-${p}">−</button><span class="scoreval">${g.scores[p]}</span><button data-plus="${g.id}-${p}">+</button></div>`).join("");
+}
 function render(){
- let g=schedule[current];gt.textContent="Game "+(current+1);ctr.textContent=(current+1)+" / 15";t1.textContent=tt(g.teams[0]);t2.textContent=tt(g.teams[1]);rr.textContent=g.rest.map(nm).join(" • ");let ng=schedule[(current+1)%15];nxt.textContent="Next: "+tt(ng.teams[0])+" vs "+tt(ng.teams[1]);prev.disabled=current===0;
- queue.innerHTML="";schedule.forEach((x,i)=>{let d=document.createElement("div");d.className="q"+(i===current?" cur":"");d.innerHTML=`<b>Game ${i+1}</b><div>${tt(x.teams[0])}</div><div>${tt(x.teams[1])}</div><div class="qr">Rest: ${x.rest.map(nm).join(", ")}</div>`;d.onclick=()=>{current=i;render()};queue.appendChild(d)});
- stats.innerHTML="";players.forEach((p,i)=>{let played=schedule.filter(x=>x.teams.flat().includes(i)).length,d=document.createElement("div");d.className="stat";d.innerHTML=`<b>${p}</b><span>${played} games • ${15-played} rests</span>`;stats.appendChild(d)});
+ liveCourts.innerHTML="";let totalDone=history.length,totalTarget=targetPerCourt*courtStates.length;progress.textContent=`${totalDone} / ${totalTarget} completed`;
+ courtStates.forEach((cs,ci)=>{
+   let d=document.createElement("div");d.className="court";
+   if(!cs.game){
+ let finished=cs.played>=targetPerCourt || (!upcomingQueue.length && cs.played>=targetPerCourt);
+ d.innerHTML=`<div class="chead"><h2>Court ${ci+1}</h2><span>${cs.played}/${targetPerCourt}</span></div><p class="muted">${finished?"Session target reached.":"Waiting for an upcoming match to become playable."}</p>`;
+ liveCourts.appendChild(d);return
 }
-gen.onclick=()=>{players=[...names.querySelectorAll("input")].map((x,i)=>x.value.trim()||L[i]);schedule=build(players.length);if(!schedule||schedule.length!==15){err.textContent="Could not generate a valid schedule. Try Generate again.";return}err.textContent="";current=0;["gameCard","queueCard","statsCard"].forEach(x=>document.getElementById(x).classList.remove("hidden"));render()};
-next.onclick=()=>{current=(current+1)%15;render()};prev.onclick=()=>{if(current){current--;render()}};reset.onclick=()=>{["gameCard","queueCard","statsCard"].forEach(x=>document.getElementById(x).classList.add("hidden"))};
+   let g=cs.game;
+   d.innerHTML=`<div class="chead"><h2>Court ${ci+1}</h2><span>Game ${cs.played+1}/${targetPerCourt}</span></div>
+   <div class="match"><div class="team">${tt(g.teams[0])}</div><div class="vs">VS</div><div class="team">${tt(g.teams[1])}</div></div>
+   <div class="scores">${scoreControls(g)}</div>
+   <div class="foot"><label class="done"><input type="checkbox" data-done="${ci}" ${cs.completed?"checked":""}> Completed</label><b>Total: ${teamTotal(g,0)+teamTotal(g,1)}</b></div>
+   <button class="pri nextbtn" data-next="${ci}" ${cs.completed?"":"disabled"}>Next Game on Court ${ci+1} →</button>
+   ${cs.completed?"":'<div class="waiting">Mark Completed to unlock the next game.</div>'}`;
+   liveCourts.appendChild(d);
+ });
+ renderUpcoming();renderHistory();renderStats();bind();
+}
+function resultHTML(h){
+ let g=h.game;return `<div class="hist"><div class="hhead"><b>Court ${h.court+1} • Game ${h.number}</b><span class="muted">Completed #${h.order}</span></div><div class="resultboard">
+ ${[0,1].map((t,i)=>`${i?'<div class="resultvs">VS</div>':''}<div class="resultteam"><div class="resultplayers">${g.teams[t].map(p=>`<div class="resultplayer"><div>${nm(p)}</div><div class="resultscore">${g.scores[p]}</div></div>`).join("")}</div><div class="teamtotal">Team Total <b>${teamTotal(g,t)}</b></div></div>`).join("")}</div></div>`;
+}
+function renderHistory(){
+ historyCard.classList.toggle("hidden",history.length===0);
+ history.innerHTML=history.slice().reverse().map(resultHTML).join("");
+ savePdf.disabled=history.length===0;
+}
+function renderStats(){stats.innerHTML="";players.forEach((p,i)=>{let d=document.createElement("div");d.className="stat";d.innerHTML=`<b>${p}</b><span>${playCount[i]} games assigned</span>`;stats.appendChild(d)})}
+function bind(){
+ document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=e=>changeScore(e.currentTarget.dataset.plus,1));
+ document.querySelectorAll("[data-minus]").forEach(b=>b.onclick=e=>changeScore(e.currentTarget.dataset.minus,-1));
+ document.querySelectorAll("[data-done]").forEach(x=>x.onchange=e=>{courtStates[+e.target.dataset.done].completed=e.target.checked;render()});
+ document.querySelectorAll("[data-next]").forEach(b=>b.onclick=e=>advanceCourt(+e.currentTarget.dataset.next));
+}
+function changeScore(key,delta){let[id,p]=key.split("-").map(Number),cs=courtStates.find(x=>x.game?.id===id);if(!cs)return;cs.game.scores[p]=Math.max(0,(cs.game.scores[p]||0)+delta);render()}
+function advanceCourt(ci){
+ let cs=courtStates[ci];if(!cs.game||!cs.completed)return;
+ history.push({court:ci,number:cs.played+1,order:history.length+1,game:JSON.parse(JSON.stringify(cs.game))});
+ cs.played++;cs.completed=false;cs.game=null;
+ if(cs.played<targetPerCourt)cs.game=takeNextPlanned(ci);
+ // A completion may unlock games for another idle court too.
+ for(let j=0;j<courtStates.length;j++){
+   if(!courtStates[j].game && courtStates[j].played<targetPerCourt) courtStates[j].game=takeNextPlanned(j);
+ }
+ render();
+}
+
+function esc(x){return String(x).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function saveSummaryPDF(){
+ if(!history.length)return;
+ const now=new Date();
+ const dateText=now.toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+ const courtCount=courtStates.length;
+ const hrs=+he.value;
+
+ const matches=history.map(h=>{
+   const g=h.game,t1=g.teams[0],t2=g.teams[1];
+   const total1=teamTotal(g,0),total2=teamTotal(g,1);
+   return `<section class="matchCard">
+     <div class="mh"><b>Match ${h.order}</b><span>Court ${h.court+1} • Court Game ${h.number}</span></div>
+     <div class="board">
+       <div class="pdfTeam">
+         <div class="players">
+           ${t1.map(p=>`<div class="player"><div class="pname">${esc(nm(p))}</div><div class="pscore">${g.scores[p]}</div></div>`).join("")}
+         </div>
+         <div class="total">Team Total <strong>${total1}</strong></div>
+       </div>
+       <div class="pdfVs">VS</div>
+       <div class="pdfTeam">
+         <div class="players">
+           ${t2.map(p=>`<div class="player"><div class="pname">${esc(nm(p))}</div><div class="pscore">${g.scores[p]}</div></div>`).join("")}
+         </div>
+         <div class="total">Team Total <strong>${total2}</strong></div>
+       </div>
+     </div>
+   </section>`;
+ }).join("");
+
+ const playerSummary=players.map((p,i)=>{
+   const completed=history.filter(h=>h.game.teams.flat().includes(i)).length;
+   return `<div class="pstat"><b>${esc(p)}</b><span>${completed} completed game${completed===1?"":"s"}</span></div>`;
+ }).join("");
+
+ const doc=`<!doctype html><html><head><meta charset="utf-8"><title>Pikolbolz Session Summary - ${esc(dateText)}</title>
+ <style>
+ @page{size:A4;margin:12mm}
+ *{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#18202b;margin:0;font-size:11pt}
+ h1{margin:0;font-size:22pt}.meta{margin:5px 0 16px;color:#52606d}.sectionTitle{font-size:15pt;margin:18px 0 8px;border-bottom:2px solid #222;padding-bottom:4px}
+ .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.sumBox,.pstat{border:1px solid #cfd6dd;border-radius:7px;padding:8px}
+ .sumBox span,.pstat span{display:block;color:#66717c;font-size:9pt;margin-top:2px}.playerGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+ .matchCard{border:1px solid #bfc8d1;border-radius:8px;padding:10px;margin:0 0 10px;break-inside:avoid;page-break-inside:avoid}
+ .mh{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}.mh span{color:#66717c}
+ .board{display:grid;grid-template-columns:1fr 34px 1fr;gap:8px;align-items:stretch}.pdfTeam{border:1px solid #d7dde3;border-radius:7px;padding:8px}
+ .players{display:grid;grid-template-columns:1fr 1fr;gap:7px}.player{text-align:center}.pname{font-weight:bold;margin-bottom:4px}.pscore{border:1px solid #aeb8c2;border-radius:5px;padding:6px;font-size:14pt;font-weight:bold}
+ .total{text-align:center;border-top:1px solid #d7dde3;margin-top:7px;padding-top:6px;color:#59636e}.total strong{font-size:16pt;color:#111;margin-left:5px}.pdfVs{display:grid;place-items:center;font-weight:bold}
+ .privacy{margin-top:14px;color:#78838e;font-size:8.5pt;text-align:center}
+ @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+ </style></head><body>
+ <h1>Pikolbolz Session Summary</h1>
+ <div class="meta">${esc(dateText)}</div>
+ <div class="summary">
+   <div class="sumBox"><b>${history.length}</b><span>Completed Matches</span></div>
+   <div class="sumBox"><b>${courtCount}</b><span>Court${courtCount===1?"":"s"}</span></div>
+   <div class="sumBox"><b>${hrs} hour${hrs===1?"":"s"}</b><span>Booking</span></div>
+ </div>
+ <div class="sectionTitle">Player Summary</div><div class="playerGrid">${playerSummary}</div>
+ <div class="sectionTitle">Completed Matches</div>${matches}
+ <div class="privacy">Generated locally by Pikolbolz. Session data was not uploaded.</div>
+ <script>window.onload=()=>setTimeout(()=>window.print(),250);<\/script>
+ </body></html>`;
+
+ const win=window.open("","_blank");
+ if(!win){alert("Please allow pop-ups for this page so the PDF summary can open.");return}
+ win.document.open();win.document.write(doc);win.document.close();
+}
+savePdf.onclick=saveSummaryPDF;
+
+gen.onclick=()=>{err.textContent="";initSession();["session","upcomingCard","statsCard"].forEach(id=>document.getElementById(id).classList.remove("hidden"));render()};
+reset.onclick=()=>{if(courtStates.length&&!confirm("Reset the entire session? This will clear all games and scores."))return;courtStates=[];history=[];upcomingQueue=[];savePdf.disabled=true;["session","upcomingCard","historyCard","statsCard"].forEach(id=>document.getElementById(id).classList.add("hidden"));err.textContent=""};
 </script></body></html>
