@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pickleball Rotation</title>
+<style>
+:root{--bg:#0b1220;--p:#111b2e;--p2:#17243b;--t:#f5f7fb;--m:#9fb0c8;--a:#8bd450;--l:#263752;--r:#ffd166}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial;background:#0b1220;color:var(--t)}
+.wrap{max-width:920px;margin:auto;padding:18px 12px 45px}.card{background:var(--p);border:1px solid var(--l);border-radius:18px;padding:18px;margin:14px 0}
+h1{margin:0}.sub,.note{color:var(--m)}.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+label{display:block;color:var(--m);font-size:13px;margin-bottom:5px}select,input{background:#0b1425;color:white;border:1px solid #334866;border-radius:10px;padding:10px}
+button{border:0;border-radius:11px;padding:11px 15px;font-weight:800;cursor:pointer}.pri{background:var(--a);color:#10200a}.sec{background:#263752;color:white}
+.names{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:9px;margin-top:14px}.nb{display:flex;gap:7px;align-items:center}.badge{width:32px;height:32px;border-radius:50%;background:#263752;display:grid;place-items:center;font-weight:900}.nb input{width:100%}
+.hidden{display:none}.court{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin:18px 0}.team{background:var(--p2);border:1px solid #314768;border-radius:15px;padding:20px;text-align:center;font-size:23px;font-weight:900}.vs{color:var(--a);font-weight:900}.rest{background:#241f12;border:1px solid #554821;color:var(--r);padding:12px;border-radius:11px}
+.controls{display:flex;gap:9px;justify-content:center;margin-top:15px}.head{display:flex;justify-content:space-between}.queue{display:grid;gap:8px}.q{display:grid;grid-template-columns:70px 1fr 1fr 1.2fr;gap:8px;padding:10px;border:1px solid var(--l);border-radius:11px;background:#0d1728}.q.cur{outline:2px solid var(--a)}.qr{color:var(--m);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.stat{background:#0d1728;border:1px solid var(--l);border-radius:10px;padding:10px}.stat span{display:block;color:var(--m);font-size:13px}
+@media(max-width:620px){.court{grid-template-columns:1fr}.vs{text-align:center}.q{grid-template-columns:60px 1fr}.q .qr{grid-column:1/-1}}
+</style></head><body><div class="wrap">
+<h1>🏓 Pickleball Rotation</h1>
+<section class="card"><div class="row"><div><label>Players</label><select id="count"><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div><button class="pri" id="gen">Generate Rotation</button></div><div id="names" class="names"></div><p id="err" class="note"></p></section>
+<section id="gameCard" class="card hidden"><div class="head"><h2 id="gt"></h2><strong id="ctr"></strong></div><div class="court"><div id="t1" class="team"></div><div class="vs">VS</div><div id="t2" class="team"></div></div><div class="rest"><b>Resting:</b> <span id="rr"></span></div><p id="nxt" class="note"></p><div class="controls"><button id="prev" class="sec">← Previous</button><button id="next" class="pri">Next Game →</button><button id="reset" class="sec">Reset</button></div></section>
+<section id="queueCard" class="card hidden"><h2>Full Queue — Games 1–15</h2><div id="queue" class="queue"></div></section>
+<section id="statsCard" class="card hidden"><h2>Session Summary</h2><div id="stats" class="stats"></div></section>
+
+</div><script>
+const L="ABCDEFGHIJ".split(""), count=document.getElementById("count"), names=document.getElementById("names");
+let players=[],schedule=[],current=0;
+function inputs(){let old=[...names.querySelectorAll("input")].map(x=>x.value);names.innerHTML="";for(let i=0;i<+count.value;i++){let d=document.createElement("div");d.className="nb";d.innerHTML=`<div class="badge">${L[i]}</div><input value="${old[i]||L[i]}">`;names.appendChild(d)}}count.onchange=inputs;inputs();
+function combos(a,k){let o=[];function f(s,c){if(c.length===k){o.push(c.slice());return}for(let i=s;i<a.length;i++){c.push(a[i]);f(i+1,c);c.pop()}}f(0,[]);return o}
+const k2=(a,b)=>a<b?a+"|"+b:b+"|"+a;
+function pairings(x){let[a,b,c,d]=x;return [[[a,b],[c,d]],[[a,c],[b,d]],[[a,d],[b,c]]]}
+function build(n){
+ const ids=[...Array(n).keys()], rc=n-4; let BEST=null;
+ for(let attempt=0;attempt<350;attempt++){
+  let gp=Array(n).fill(0),rs=Array(n).fill(0),st=Array(n).fill(0),rt=new Map(),pm=new Map(),om=new Map(),games=[],bad=false;
+  for(let g=0;g<15;g++){
+   let opts=combos(ids,rc).filter(r=>{let R=new Set(r);return ids.every(p=>st[p]<2||R.has(p))});
+   if(!opts.length){bad=true;break}
+   let scored=opts.map(r=>{let R=new Set(r),ag=ids.map(p=>gp[p]+(R.has(p)?0:1)),ar=ids.map(p=>rs[p]+(R.has(p)?1:0)),rep=0,maxp=0,newp=0;
+    for(let i=0;i<r.length;i++)for(let j=i+1;j<r.length;j++){let v=rt.get(k2(r[i],r[j]))||0;rep+=v;maxp=Math.max(maxp,v);if(!v)newp++}
+    let imbalance=(Math.max(...ag)-Math.min(...ag)+Math.max(...ar)-Math.min(...ar))*1200;
+    return {r,score:imbalance+rep*(n===6?10000:350)+maxp*300-newp*30+r.reduce((s,p)=>s+rs[p],0)*8+Math.random()*2}
+   }).sort((a,b)=>a.score-b.score);
+   let pick=scored[Math.floor(Math.random()*Math.min(n===6?2:5,scored.length))].r,R=new Set(pick),play=ids.filter(p=>!R.has(p));
+   let bp=null,bs=1e9;for(let teams of pairings(play)){let[[a,b],[c,d]]=teams,s=(pm.get(k2(a,b))||0)*18+(pm.get(k2(c,d))||0)*18;for(let x of[a,b])for(let y of[c,d])s+=(om.get(k2(x,y))||0)*4;s+=Math.random();if(s<bs){bs=s;bp=teams}}
+   let[[a,b],[c,d]]=bp;pm.set(k2(a,b),(pm.get(k2(a,b))||0)+1);pm.set(k2(c,d),(pm.get(k2(c,d))||0)+1);for(let x of[a,b])for(let y of[c,d])om.set(k2(x,y),(om.get(k2(x,y))||0)+1);
+   for(let i=0;i<pick.length;i++)for(let j=i+1;j<pick.length;j++){let k=k2(pick[i],pick[j]);rt.set(k,(rt.get(k)||0)+1)}
+   ids.forEach(p=>{if(R.has(p)){rs[p]++;st[p]=0}else{gp[p]++;st[p]++}});games.push({teams:bp,rest:pick.slice()});
+  }
+  if(bad||games.length!==15)continue;
+  let imb=(Math.max(...gp)-Math.min(...gp))*3000,repeat=0,maxrt=0;rt.forEach(v=>{repeat+=Math.max(0,v-1);maxrt=Math.max(maxrt,v)});
+  let perfect=0;if(n===6){let u=0;for(let a=0;a<6;a++)for(let b=a+1;b<6;b++)if((rt.get(k2(a,b))||0)===1)u++;if(u===15&&maxrt===1)perfect=-100000}
+  let score=imb+repeat*1000+maxrt*200+perfect;if(!BEST||score<BEST.score)BEST={games,score};
+ }
+ return BEST?.games;
+}
+const nm=i=>players[i],tt=t=>nm(t[0])+" + "+nm(t[1]);
+function render(){
+ let g=schedule[current];gt.textContent="Game "+(current+1);ctr.textContent=(current+1)+" / 15";t1.textContent=tt(g.teams[0]);t2.textContent=tt(g.teams[1]);rr.textContent=g.rest.map(nm).join(" • ");let ng=schedule[(current+1)%15];nxt.textContent="Next: "+tt(ng.teams[0])+" vs "+tt(ng.teams[1]);prev.disabled=current===0;
+ queue.innerHTML="";schedule.forEach((x,i)=>{let d=document.createElement("div");d.className="q"+(i===current?" cur":"");d.innerHTML=`<b>Game ${i+1}</b><div>${tt(x.teams[0])}</div><div>${tt(x.teams[1])}</div><div class="qr">Rest: ${x.rest.map(nm).join(", ")}</div>`;d.onclick=()=>{current=i;render()};queue.appendChild(d)});
+ stats.innerHTML="";players.forEach((p,i)=>{let played=schedule.filter(x=>x.teams.flat().includes(i)).length,d=document.createElement("div");d.className="stat";d.innerHTML=`<b>${p}</b><span>${played} games • ${15-played} rests</span>`;stats.appendChild(d)});
+}
+gen.onclick=()=>{players=[...names.querySelectorAll("input")].map((x,i)=>x.value.trim()||L[i]);schedule=build(players.length);if(!schedule||schedule.length!==15){err.textContent="Could not generate a valid schedule. Try Generate again.";return}err.textContent="";current=0;["gameCard","queueCard","statsCard"].forEach(x=>document.getElementById(x).classList.remove("hidden"));render()};
+next.onclick=()=>{current=(current+1)%15;render()};prev.onclick=()=>{if(current){current--;render()}};reset.onclick=()=>{["gameCard","queueCard","statsCard"].forEach(x=>document.getElementById(x).classList.add("hidden"))};
+</script></body></html>
