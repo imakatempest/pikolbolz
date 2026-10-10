@@ -263,7 +263,7 @@ let canEdit=()=>false,updatePermissions=()=>{},runMutation=()=>{},createSession=
 const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
 const {getAuth,signInAnonymously,onAuthStateChanged,getIdTokenResult}=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const {getFirestore,doc,onSnapshot,runTransaction}=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
-const config={apiKey:'AIzaSyBxoGkdqsKGTyZCg0IP5iwxcnY6wWveffg',authDomain:'pikolbolz.firebaseapp.com',projectId:'pikolbolz',storageBucket:'pikolbolz.firebasestorage.app',messagingSenderId:'59760949339',appId:'1:59760949339:web:a30bcc9c6c8a73196b277e'};
+const config={apiKey:'AIzaSyBxoGkdqsKGTyZCgOIP5iwxcnY6wWVeffg',authDomain:'pikolbolz.firebaseapp.com',projectId:'pikolbolz',storageBucket:'pikolbolz.firebasestorage.app',messagingSenderId:'59760949339',appId:'1:59760949339:web:a30bcc9c6c8a73196b277e'};
 const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app),ref=doc(db,'sessions','main');
 const status=document.getElementById('syncStatus'),syncError=document.getElementById('syncError'),pinInput=document.getElementById('pinInput'),unlock=document.getElementById('unlock'),mode=document.getElementById('mode');
 let editorUntil=0,remote=null,connected=false,writing=false;
