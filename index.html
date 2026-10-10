@@ -173,7 +173,12 @@ function bind(){
  document.querySelectorAll("[data-tplus]").forEach(b=>b.onclick=e=>changeTeamScore(e.currentTarget.dataset.tplus,1));
  document.querySelectorAll("[data-tminus]").forEach(b=>b.onclick=e=>changeTeamScore(e.currentTarget.dataset.tminus,-1));
  document.querySelectorAll("[data-done]").forEach(x=>x.onchange=e=>{let ci=+e.target.dataset.done,done=e.target.checked;runMutation(()=>{if(courtStates[ci]?.game)courtStates[ci].completed=done})});
- document.querySelectorAll("[data-next]").forEach(b=>b.onclick=e=>runMutation(()=>advanceCourt(+e.currentTarget.dataset.next)));
+document.querySelectorAll("[data-next]").forEach(b => {
+  b.onclick = e => {
+    const courtIndex = +e.currentTarget.dataset.next;
+    return runMutation(() => advanceCourt(courtIndex));
+  };
+});
 }
 function changeTeamScore(key,delta){runMutation(()=>{let[id,t]=key.split("-").map(Number),cs=courtStates.find(x=>x.game?.id===id);if(!cs)return;cs.game.teamScores[t]=Math.max(0,(cs.game.teamScores[t]||0)+delta)})}
 function advanceCourt(ci){
