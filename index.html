@@ -164,9 +164,17 @@ function resultHTML(h){
  ${[0,1].map((t,i)=>`${i?'<div class="resultvs">VS</div>':''}<div class="resultteam"><div class="resultTeamNames">${esc(tt(g.teams[t]))}</div><div class="resultTeamScore">${teamTotal(g,t)}</div></div>`).join("")}</div></div>`;
 }
 function renderHistory(){
- historyCard.classList.toggle("hidden",history.length===0);
- history.innerHTML=history.slice().reverse().map(resultHTML).join("");
- savePdf.disabled=history.length===0;
+  const historyContainer = document.getElementById("history");
+
+  historyCard.classList.toggle("hidden", history.length === 0);
+
+  historyContainer.innerHTML = history
+    .slice()
+    .reverse()
+    .map(resultHTML)
+    .join("");
+
+  savePdf.disabled = history.length === 0;
 }
 function renderStats(){stats.innerHTML="";players.forEach((p,i)=>{let d=document.createElement("div");d.className="stat";d.innerHTML=`<b>${esc(p)}</b><span>${playCount[i]} games assigned</span>`;stats.appendChild(d)})}
 function bind(){
