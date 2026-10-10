@@ -263,7 +263,7 @@ let canEdit=()=>false,updatePermissions=()=>{},runMutation=()=>{},createSession=
 const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
 const {getAuth,signInAnonymously,onAuthStateChanged,getIdTokenResult}=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const {getFirestore,doc,onSnapshot,runTransaction}=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
-const config={apiKey:'AIzaSyBxoGkdqsKGTyZCgOIP5iwxcnY6wWVeffg',authDomain:'pikolbolz.firebaseapp.com',projectId:'pikolbolz',storageBucket:'pikolbolz.firebasestorage.app',messagingSenderId:'59760949339',appId:'1:59760949339:web:a30bcc9c6c8a73196b277e'};
+const config={apiKey:'AIzaSyBxoGkdqsKGTyZCg0IP5iwxcnY6wWveffg',authDomain:'pikolbolz.firebaseapp.com',projectId:'pikolbolz',storageBucket:'pikolbolz.firebasestorage.app',messagingSenderId:'59760949339',appId:'1:59760949339:web:a30bcc9c6c8a73196b277e'};
 const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app),ref=doc(db,'sessions','main');
 const status=document.getElementById('syncStatus'),syncError=document.getElementById('syncError'),pinInput=document.getElementById('pinInput'),unlock=document.getElementById('unlock'),mode=document.getElementById('mode');
 let editorUntil=0,remote=null,connected=false,writing=false;
@@ -279,7 +279,7 @@ updatePermissions=function(){
 }
 function readData(d){
  if(!d){remote=null;courtStates=[];history=[];upcomingQueue=[];['session','upcomingCard','historyCard','statsCard'].forEach(id=>document.getElementById(id).classList.add('hidden'));savePdf.disabled=true;updatePermissions();return;}
- remote=d;players=d.players||[];courtStates=structuredClone(d.courtStates||[]);history=structuredClone(d.history||[]);upcomingQueue=structuredClone(d.upcomingQueue||[]);targetPerCourt=d.targetPerCourt||0;gameSeq=d.gameSeq||0;plannedSeq=d.plannedSeq||0;playCount=d.playCount||[];sessionHours=d.hours||1;
+ remote=d;d=d.payload?JSON.parse(d.payload):d;players=d.players||[];courtStates=structuredClone(d.courtStates||[]);history=structuredClone(d.history||[]);upcomingQueue=structuredClone(d.upcomingQueue||[]);targetPerCourt=d.targetPerCourt||0;gameSeq=d.gameSeq||0;plannedSeq=d.plannedSeq||0;playCount=d.playCount||[];sessionHours=d.hours||1;
  ce.value=String(d.courts||1);he.value=String(sessionHours);setup();pe.value=String(players.length);inputs();[...ne.querySelectorAll('input')].forEach((x,i)=>x.value=players[i]||'');
  ['session','statsCard'].forEach(id=>document.getElementById(id).classList.remove('hidden'));render();
 }
@@ -291,12 +291,12 @@ runMutation=async function(fn){
  writing=true;syncError.textContent='';
  try{await runTransaction(db,async tx=>{
   const snap=await tx.get(ref);if(!snap.exists())throw Error('Session was reset.');
-  const d=snap.data();readData(d);fn();tx.update(ref,{...snapshotData(),hostUid:d.hostUid,revision:(d.revision||0)+1});
+  const d=snap.data();readData(d);fn();tx.update(ref,{payload:JSON.stringify(snapshotData()),hostUid:d.hostUid,revision:(d.revision||0)+1});
  });}catch(e){syncError.textContent='Could not save change: '+e.message; if(remote)readData(remote)}finally{writing=false}
 };
 createSession=async function(){
  if(!canEdit()||remote||writing)return;writing=true;syncError.textContent='';
- try{initSession();sessionHours=+he.value;const payload=snapshotData();await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(snap.exists())throw Error('A session already exists.');tx.set(ref,{...payload,hostUid:auth.currentUser.uid,revision:1});});}
+ try{initSession();sessionHours=+he.value;const payload=snapshotData();await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(snap.exists())throw Error('A session already exists.');tx.set(ref,{payload:JSON.stringify(payload),hostUid:auth.currentUser.uid,revision:1});});}
  catch(e){syncError.textContent='Cannot create session: '+e.message;}finally{writing=false}
 };
 resetSession=async function(){
