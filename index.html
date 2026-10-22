@@ -209,21 +209,35 @@ function renderHistory(){
 
   savePdf.disabled = history.length === 0;
 }
-
 function renderStats() {
   stats.innerHTML = "";
 
   players.forEach((p, i) => {
+
+    // All upcoming matches containing this player
+    const queued = upcomingQueue.filter(g =>
+      g.teams.flat().includes(i)
+    ).length;
+
+    // Current matches containing this player
+    const live = courtStates.filter(cs =>
+      cs.game && cs.game.teams.flat().includes(i)
+    ).length;
+
+    // Completed matches containing this player
     const completed = history.filter(h =>
       h.game.teams.flat().includes(i)
     ).length;
+
+    // Total assigned throughout the entire session
+    const assigned = queued + live + completed;
 
     const d = document.createElement("div");
     d.className = "stat";
 
     d.innerHTML = `
       <b>${esc(p)}</b>
-      <span>${playCount[i] || 0} Games Assigned / ${completed} Games Completed</span>
+      <span>${assigned} Games Assigned / ${completed} Games Completed</span>
     `;
 
     stats.appendChild(d);
