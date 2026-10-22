@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pikolbolz v1.4 Multiplayer</title><style>
+<title>Pikolbolz v1.5 Fair Play Multiplayer</title><style>
 :root{--b:#0b1220;--p:#111b2e;--p2:#17243b;--t:#f5f7fb;--m:#9fb0c8;--a:#8bd450;--l:#263752;--y:#ffd166}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial;background:var(--b);color:var(--t)}.w{max-width:1180px;margin:auto;padding:18px 12px 50px}
 .card{background:var(--p);border:1px solid var(--l);border-radius:18px;padding:18px;margin:14px 0}h1{margin:0 0 16px}.row{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
@@ -68,40 +68,73 @@ function createGame(ci){
  return {id:gameSeq,teams,scores:Object.fromEntries(flat.map(p=>[p,0]))};
 }
 
-function planNextGame(simPlay,simWait,simPartner,simOpponent){
- let ids=players.map((_,i)=>i).sort((a,b)=>{
-   let sa=simPlay[a]*1000-simWait[a]*80+Math.random()*2;
-   let sb=simPlay[b]*1000-simWait[b]*80+Math.random()*2;
-   return sa-sb;
- });
- let pool=ids.slice(0,Math.min(9,ids.length)),best=null,bs=Infinity;
- for(let a=0;a<pool.length;a++)for(let b=a+1;b<pool.length;b++)for(let c=b+1;c<pool.length;c++)for(let d=c+1;d<pool.length;d++){
-   let q=[pool[a],pool[b],pool[c],pool[d]];
-   let sc=q.reduce((z,p)=>z+simPlay[p]*100-simWait[p]*12,0)+Math.random();
-   if(sc<bs){bs=sc;best=q}
- }
- let four=best||ids.slice(0,4), [a,b,c,d]=four;
- let opts=[[[a,b],[c,d]],[[a,c],[b,d]],[[a,d],[b,c]]],teams=null,tbs=Infinity;
- for(const x of opts){
-   let [t1,t2]=x,sc=(simPartner.get(k2(...t1))||0)*30+(simPartner.get(k2(...t2))||0)*30;
-   for(const p of t1)for(const q of t2)sc+=(simOpponent.get(k2(p,q))||0)*7;
-   sc+=Math.random();
-   if(sc<tbs){tbs=sc;teams=x}
- }
- let chosen=new Set(four);
- players.forEach((_,p)=>{if(chosen.has(p)){simPlay[p]++;simWait[p]=0}else simWait[p]++});
- let [t1,t2]=teams;
- simPartner.set(k2(...t1),(simPartner.get(k2(...t1))||0)+1);
- simPartner.set(k2(...t2),(simPartner.get(k2(...t2))||0)+1);
- for(const p of t1)for(const q of t2)simOpponent.set(k2(p,q),(simOpponent.get(k2(p,q))||0)+1);
- plannedSeq++;
- return {planId:plannedSeq,teams};
+// v1.5: build the planned queue with participation fairness first, then variety.
+// Group-pair history counts how often any two players share the same match,
+// regardless of whether they are partners or opponents.
+function planNextGame(simPlay,simWait,simPartner,simOpponent,simGroup,simStreak){
+  const n=players.length;
+  let minimumGames=Infinity;
+  for(const count of simPlay)minimumGames=Math.min(minimumGames,count);
+  // At most one game separates selected players from the least-played group
+  // whenever four such players exist. When fewer than four remain, include
+  // the next participation tier to fill the court.
+  const sorted=Array.from({length:n},(_,i)=>i).sort((a,b)=>simPlay[a]-simPlay[b]);
+  const cutoff=simPlay[sorted[3]];
+  const eligible=sorted.filter(p=>simPlay[p]<=cutoff);
+  let best=null,bestScore=Infinity;
+  // Enumerate combinations of four, not merely the first 9 people in a
+  // shuffled shortlist. With 24 players there are at most 10,626 groups.
+  for(let a=0;a<eligible.length-3;a++)for(let b=a+1;b<eligible.length-2;b++)
+  for(let c=b+1;c<eligible.length-1;c++)for(let d=c+1;d<eligible.length;d++){
+    const four=[eligible[a],eligible[b],eligible[c],eligible[d]];
+    const countSum=four.reduce((s,p)=>s+simPlay[p],0);
+    // Strong priority for the four least-played players.
+    let score=countSum*100000;
+    // Prefer resting someone after two consecutive planned matches, if a
+    // fair alternative exists. Impossible cases are allowed rather than stall.
+    score+=four.reduce((s,p)=>s+(simStreak[p]>=2?2200:simStreak[p]===1?70:0),0);
+    // Crucial fix: penalize repeatedly grouping ANY pair in the same match.
+    for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){
+      const seen=simGroup.get(k2(four[i],four[j]))||0;
+      score+=seen*seen*180;
+    }
+    // Longer wait breaks ties while preserving participation fairness.
+    score-=four.reduce((s,p)=>s+Math.min(simWait[p],20)*15,0);
+    score+=Math.random()*8;
+    if(score<bestScore){bestScore=score;best=four;}
+  }
+  const four=best||sorted.slice(0,4);
+  const [a,b,c,d]=four;
+  const opts=[[[a,b],[c,d]],[[a,c],[b,d]],[[a,d],[b,c]]];
+  let teams=null,teamScore=Infinity;
+  for(const option of opts){
+    const [t1,t2]=option;
+    let score=(simPartner.get(k2(...t1))||0)*100+(simPartner.get(k2(...t2))||0)*100;
+    for(const p of t1)for(const q of t2)score+=(simOpponent.get(k2(p,q))||0)*20;
+    score+=Math.random();
+    if(score<teamScore){teamScore=score;teams=option;}
+  }
+  const chosen=new Set(four);
+  for(let p=0;p<n;p++){
+    if(chosen.has(p)){simPlay[p]++;simWait[p]=0;simStreak[p]++;}
+    else{simWait[p]++;simStreak[p]=0;}
+  }
+  for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){
+    const key=k2(four[i],four[j]);simGroup.set(key,(simGroup.get(key)||0)+1);
+  }
+  const [t1,t2]=teams;
+  for(const t of teams){const key=k2(...t);simPartner.set(key,(simPartner.get(key)||0)+1);}
+  for(const p of t1)for(const q of t2){const key=k2(p,q);simOpponent.set(key,(simOpponent.get(key)||0)+1);}
+  plannedSeq++;
+  return {planId:plannedSeq,teams};
 }
 function buildMasterQueue(total){
- let sp=Array(players.length).fill(0),sw=Array(players.length).fill(0),pm=new Map(),om=new Map(),q=[];
- for(let i=0;i<total;i++)q.push(planNextGame(sp,sw,pm,om));
- return q;
+  const sp=Array(players.length).fill(0),sw=Array(players.length).fill(0);
+  const streak=Array(players.length).fill(0),pm=new Map(),om=new Map(),gm=new Map(),queue=[];
+  for(let i=0;i<total;i++)queue.push(planNextGame(sp,sw,pm,om,gm,streak));
+  return queue;
 }
+
 function queueGamePlayable(item,exceptCourt=-1){
  let busy=busyPlayers(exceptCourt);
  return item.teams.flat().every(p=>!busy.has(p));
@@ -287,7 +320,7 @@ updatePermissions=function(){
  unlock.classList.toggle('hidden',canEdit());pinInput.classList.toggle('hidden',canEdit());
  for(const id of ['courts','hours','count','gen'])document.getElementById(id).disabled=!canEdit()||!!remote;
  document.getElementById('gen').disabled=!canEdit()||!!remote;
- document.getElementById('reset').disabled=!isHost()||!remote;
+ document.getElementById('reset').disabled=!canEdit()||!remote;
  document.querySelectorAll('#names input').forEach(x=>x.disabled=!canEdit()||!!remote);
 }
 function readData(d){
@@ -313,8 +346,8 @@ createSession=async function(){
  catch(e){syncError.textContent='Cannot create session: '+e.message;}finally{writing=false}
 };
 resetSession=async function(){
- if(!isHost()||writing||!confirm('Reset the shared session for EVERYONE? This deletes all games and scores.'))return;
- writing=true;try{await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())return;if(snap.data().hostUid!==auth.currentUser.uid)throw Error('Only the session host can reset.');tx.delete(ref);});}catch(e){syncError.textContent='Reset failed: '+e.message}finally{writing=false}
+ if(!canEdit()||writing||!confirm('Reset the shared session for EVERYONE? This deletes all games and scores.'))return;
+ writing=true;try{await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())return;tx.delete(ref);});}catch(e){syncError.textContent='Reset failed: '+e.message}finally{writing=false}
 };
 unlock.onclick=async()=>{
  const pin=pinInput.value.trim();if(!/^\d{6}$/.test(pin)){syncError.textContent='Enter a six-digit PIN.';return;}
