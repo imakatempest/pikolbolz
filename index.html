@@ -209,7 +209,26 @@ function renderHistory(){
 
   savePdf.disabled = history.length === 0;
 }
-function renderStats(){stats.innerHTML="";players.forEach((p,i)=>{let d=document.createElement("div");d.className="stat";d.innerHTML=`<b>${esc(p)}</b><span>${playCount[i]} games assigned</span>`;stats.appendChild(d)})}
+
+function renderStats() {
+  stats.innerHTML = "";
+
+  players.forEach((p, i) => {
+    const completed = history.filter(h =>
+      h.game.teams.flat().includes(i)
+    ).length;
+
+    const d = document.createElement("div");
+    d.className = "stat";
+
+    d.innerHTML = `
+      <b>${esc(p)}</b>
+      <span>${playCount[i] || 0} Games Assigned / ${completed} Games Completed</span>
+    `;
+
+    stats.appendChild(d);
+  });
+}
 function bind(){
  document.querySelectorAll("[data-tplus]").forEach(b=>b.onclick=e=>changeTeamScore(e.currentTarget.dataset.tplus,1));
  document.querySelectorAll("[data-tminus]").forEach(b=>b.onclick=e=>changeTeamScore(e.currentTarget.dataset.tminus,-1));
